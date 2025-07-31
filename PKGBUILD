@@ -14,7 +14,7 @@ url=""
 license=('unknown')
 groups=()
 depends=()
-makedepends=(dotnet-runtime-bin xz tar)
+makedepends=(dotnet-runtime-bin xz tar git)
 checkdepends=()
 optdepends=()
 provides=()
@@ -24,16 +24,17 @@ backup=()
 options=()
 install=
 changelog=
-source=("https://github.com/Ninjastorm380/rampartfs.git")
+source=()
 noextract=()
-sha256sums=('91f5f0b8f3906a4ff0ee22303f0db3a47696bad0f393381534de6249cc27f956')
+sha256sums=()
 validpgpkeys=()
 
 prepare() {
-	return 0
+	git clone "https://github.com/Ninjastorm380/rampartfs.git"
 }
 
 build() {
+    cd $srcdir/rampartfs
 	dotnet publish . -c release -r linux-x64 -o $srcdir/RampartFS/bin/Publish/net9.0/linux-x64
 }
 
