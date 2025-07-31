@@ -26,7 +26,7 @@ install=
 changelog=
 source=("https://github.com/Ninjastorm380/rampartfs.git")
 noextract=()
-sha256sums=('91f5f0b8f3906a4ff0ee22303f0db3a47696bad0f393381534de6249cc27f956')
+sha256sums=('efc8a9cfe1ac744a8a2f252ca317ef03839cd9192e2ea2d8b3325cb053e64489')
 validpgpkeys=()
 
 prepare() {
