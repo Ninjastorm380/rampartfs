@@ -8,13 +8,13 @@ internal partial class Driver : IFuseOperations {
     public Driver (
         String RootPath,
         String ControlPath,
-        Int64 MaximumStorage,
-        Int64 MaximumCache,
-        Int64 MinimumTrim
+        Int64  MaximumStorage,
+        Int64  MaximumCache,
+        Int64  TrimTarget
     ) {
         AppDomain.CurrentDomain.ProcessExit += CurrentDomainOnProcessExit;
         
-        BaseManager   = new Manager(RootPath, ControlPath, MaximumStorage, MaximumCache, MinimumTrim);
+        BaseManager   = new Manager(RootPath, ControlPath, MaximumStorage, MaximumCache, TrimTarget);
         BasePathCache = new PathCache(RootPath);
     }
     

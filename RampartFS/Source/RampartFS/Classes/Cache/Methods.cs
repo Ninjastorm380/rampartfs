@@ -32,11 +32,13 @@ internal partial class Cache {
     private void ConditionalTrim () {
         Monitor.Enter(BaseCache);
         Int64 MaximumCache = BaseParamController["MaximumCache", 0];
-        Int64 MinimumTrim  = BaseParamController["MinimumTrim", 0];
+        Int64 TrimTarget   = BaseParamController["TrimTarget", 0];
         
         if (BaseCurrentCache >= MaximumCache) {
             List<KeyValuePair<String, CacheEntry>> SortedEntries = BaseCache.ToList();
             SortedEntries.Sort(Comparison);
+
+            Int64 RelativeTrimTarget = Math.Max(1048576, MaximumCache - TrimTarget);
 
             Int64 TrimAmount = 0;
             List<KeyValuePair<String, CacheEntry>> SelectedEntries = new List<KeyValuePair<String, CacheEntry>>(SortedEntries.Count);
@@ -46,7 +48,7 @@ internal partial class Cache {
                 SelectedEntries.Add(SelectedEntry);
                 TrimAmount = TrimAmount + SelectedEntry.Value.Length;
                 
-                if (TrimAmount >= Math.Min(Math.Max(1048576, MinimumTrim), MaximumCache)) {
+                if (TrimAmount >= Math.Min(Math.Max(1048576, RelativeTrimTarget), MaximumCache)) {
                     break;
                 }
             }
@@ -62,7 +64,6 @@ internal partial class Cache {
             GC.Collect(0, GCCollectionMode.Forced, true, true);
             GC.Collect(1, GCCollectionMode.Forced, true, true);
             GC.Collect(2, GCCollectionMode.Forced, true, true);
-            GC.Collect(3, GCCollectionMode.Forced, true, true);
         }
         Monitor.Exit(BaseCache);
     }
@@ -80,28 +81,47 @@ internal partial class Cache {
         in  Int64      Offset,
         out Int32      BytesRead
     ) {
-        Monitor.Enter(BaseCache);
-        if (BaseCache.TryGetValue(AbsolutePath, out CacheEntry? Value) == false) {
-            Value = new CacheEntry(AbsolutePath);
-            BaseCache.TryAdd(AbsolutePath, Value);
+        FileInfo Info = new FileInfo(AbsolutePath);
+        
+        Int64 MaximumCache = BaseParamController["MaximumCache", 0];
+        Int64 TrimTarget   = BaseParamController["TrimTarget", 0];
+        Int64 Threshold    = Math.Max((Int64)((MaximumCache - TrimTarget) / 4), 8388608);
+
+        if (Info.Length > Threshold) {
+            FileStream DiskStream = new FileStream(AbsolutePath, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+            DiskStream.Position = Offset;
+            BytesRead           = DiskStream.Read(Buffer);
+            
+            DiskStream.Flush();
+            DiskStream.Close();
+            DiskStream.DisposeAsync();
+            
+            return PosixResult.Success;
         }
+        else {
+            Monitor.Enter(BaseCache);
+            if (BaseCache.TryGetValue(AbsolutePath, out CacheEntry? Value) == false) {
+                Value = new CacheEntry(AbsolutePath);
+                BaseCache.TryAdd(AbsolutePath, Value);
+            }
 
-        Value.Lock();
+            Value.Lock();
         
-        Monitor.Exit(BaseCache);
+            Monitor.Exit(BaseCache);
 
-        if (Value.Loaded == false) {
-            Value.Load();
-            Interlocked.Add(ref BaseCurrentCache, Value.Length);
+            if (Value.Loaded == false) {
+                Value.Load();
+                Interlocked.Add(ref BaseCurrentCache, Value.Length);
+            }
+
+            PosixResult Result = Value.Read(Buffer, Offset, out BytesRead);
+        
+            Value.Unlock();
+        
+            ConditionalTrim();
+
+            return Result;
         }
-
-        PosixResult Result = Value.Read(Buffer, Offset, out BytesRead);
-        
-        Value.Unlock();
-        
-        ConditionalTrim();
-
-        return Result;
     }
     
     public PosixResult WriteFile (
@@ -113,35 +133,61 @@ internal partial class Cache {
         in  Int64              CurrentStorage,
         in  Int64              MaximumStorage
     ) {
-        Monitor.Enter(BaseCache);
-        if (BaseCache.TryGetValue(AbsolutePath, out CacheEntry? Value) == false) {
-            Value = new CacheEntry(AbsolutePath);
-            BaseCache.TryAdd(AbsolutePath, Value);
-        }
-
-        Value.Lock();
+        FileInfo Info = new FileInfo(AbsolutePath);
         
-        Monitor.Exit(BaseCache);
+        Int64 MaximumCache = BaseParamController["MaximumCache", 0];
+        Int64 TrimTarget   = BaseParamController["TrimTarget", 0];
+        Int64 Threshold    = Math.Max((Int64)((MaximumCache - TrimTarget) / 4), 8388608);
 
-        if (Value.Loaded == false) {
-            Value.Load();
-            Interlocked.Add(ref BaseCurrentCache, Value.Length);
+        if (Info.Length > Threshold) {
+            CheckWrite(Buffer, Offset, Info, out Difference);
+            if (CurrentStorage + Difference > MaximumStorage) {
+                BytesWritten = 0;
+                return PosixResult.ENOSPC;
+            }
+            
+            FileStream DiskStream = new FileStream(AbsolutePath, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+            DiskStream.Position = Offset;
+            DiskStream.Write(Buffer);
+            BytesWritten = Buffer.Length;
+            
+            DiskStream.Flush();
+            DiskStream.Close();
+            DiskStream.DisposeAsync();
+            
+            return PosixResult.Success;
         }
+        else {
+            Monitor.Enter(BaseCache);
+            if (BaseCache.TryGetValue(AbsolutePath, out CacheEntry? Value) == false) {
+                Value = new CacheEntry(AbsolutePath);
+                BaseCache.TryAdd(AbsolutePath, Value);
+            }
 
-        Value.CheckWrite(Buffer, Offset, out Difference);
-        if (CurrentStorage + Difference > MaximumStorage) {
-            BytesWritten = 0;
+            Value.Lock();
+        
+            Monitor.Exit(BaseCache);
+
+            if (Value.Loaded == false) {
+                Value.Load();
+                Interlocked.Add(ref BaseCurrentCache, Value.Length);
+            }
+
+            Value.CheckWrite(Buffer, Offset, out Difference);
+            if (CurrentStorage + Difference > MaximumStorage) {
+                BytesWritten = 0;
+                Value.Unlock();
+                ConditionalTrim();
+                return PosixResult.ENOSPC;
+            }
+        
+            PosixResult Result = Value.Write(Buffer, Offset, out BytesWritten);
+            Interlocked.Add(ref BaseCurrentCache, Difference);
             Value.Unlock();
             ConditionalTrim();
-            return PosixResult.ENOSPC;
-        }
-        
-        PosixResult Result = Value.Write(Buffer, Offset, out BytesWritten);
-        Interlocked.Add(ref BaseCurrentCache, Difference);
-        Value.Unlock();
-        ConditionalTrim();
 
-        return Result;
+            return Result;
+        }
     }
     
     public PosixResult TruncateFile (
@@ -151,35 +197,58 @@ internal partial class Cache {
         in  Int64  CurrentStorage,
         in  Int64  MaximumStorage
     ) {
-        Monitor.Enter(BaseCache);
-        if (BaseCache.TryGetValue(AbsolutePath, out CacheEntry? Value) == false) {
-            Value = new CacheEntry(AbsolutePath);
-            BaseCache.TryAdd(AbsolutePath, Value);
-        }
+        FileInfo Info = new FileInfo(AbsolutePath);
 
-        Value.Lock();
-        
-        Monitor.Exit(BaseCache);
+        Int64 MaximumCache = BaseParamController["MaximumCache", 0];
+        Int64 TrimTarget   = BaseParamController["TrimTarget", 0];
+        Int64 Threshold    = Math.Max((Int64)((MaximumCache - TrimTarget) / 4), 8388608);
 
-        if (Value.Loaded == false) {
-            Value.Load();
-            Interlocked.Add(ref BaseCurrentCache, Value.Length);
+        if (Info.Length > Threshold) {
+            CheckTruncate(Length, Info, out Difference);
+            if (CurrentStorage + Difference > MaximumStorage) {
+                return PosixResult.ENOSPC;
+            }
+            
+            FileStream DiskStream = new FileStream(AbsolutePath, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+            DiskStream.SetLength(Length);
+            
+            DiskStream.Flush();
+            DiskStream.Close();
+            DiskStream.DisposeAsync();
+            
+            return PosixResult.Success;
         }
+        else {
+            Monitor.Enter(BaseCache);
+            if (BaseCache.TryGetValue(AbsolutePath, out CacheEntry? Value) == false) {
+                Value = new CacheEntry(AbsolutePath);
+                BaseCache.TryAdd(AbsolutePath, Value);
+            }
+
+            Value.Lock();
         
-        Value.CheckTruncate(Length, out Difference);
-        if (CurrentStorage + Difference > MaximumStorage) {
+            Monitor.Exit(BaseCache);
+
+            if (Value.Loaded == false) {
+                Value.Load();
+                Interlocked.Add(ref BaseCurrentCache, Value.Length);
+            }
+        
+            Value.CheckTruncate(Length, out Difference);
+            if (CurrentStorage + Difference > MaximumStorage) {
+                Value.Unlock();
+                ConditionalTrim();
+                return PosixResult.ENOSPC;
+            }
+        
+            PosixResult Result = Value.Truncate(Length);
+            Interlocked.Add(ref BaseCurrentCache, Difference);
+        
             Value.Unlock();
             ConditionalTrim();
-            return PosixResult.ENOSPC;
-        }
-        
-        PosixResult Result = Value.Truncate(Length);
-        Interlocked.Add(ref BaseCurrentCache, Difference);
-        
-        Value.Unlock();
-        ConditionalTrim();
 
-        return Result;
+            return Result;
+        }
     }
 
     public void ConditionalDrop (
@@ -296,5 +365,27 @@ internal partial class Cache {
         Value.Unlock();
         
         Output = Modified;
+    }
+    
+    private void CheckWrite (
+        in  ReadOnlySpan<Byte> Buffer,
+        in  Int64              Offset,
+        in  FileInfo           Info,
+        out Int64              Difference
+    ) {
+        Int64 Before = Info.Length;
+        Int64 After  = Offset + Buffer.Length;
+        Difference = Math.Max(0, After - Before);
+    }
+    
+    private void CheckTruncate (
+        in  Int64    Length,
+        in  FileInfo Info,
+        out Int64    Difference
+    ) {
+        Int64 Before = Info.Length;
+        Int64 After  = Length;
+        
+        Difference = After - Before;
     }
 }
