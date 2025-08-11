@@ -11,13 +11,13 @@ internal partial class Manager {
         String ControlPath,
         Int64  MaximumStorage,
         Int64  MaximumCache,
-        Int64  MinimumTrim
+        Int64  TrimTarget
     ) {
         BaseController     = new Controller<Int64>(ControlPath);
 
         BaseController["MaximumStorage", MaximumStorage] = MaximumStorage;
         BaseController["MaximumCache", MaximumCache]     = MaximumCache;
-        BaseController["MinimumTrim", MinimumTrim]       = MinimumTrim;
+        BaseController["TrimTarget", TrimTarget]         = TrimTarget;
         BaseController.LoadRaw("CachedEntries");
         
         
