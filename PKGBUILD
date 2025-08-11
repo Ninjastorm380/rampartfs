@@ -3,9 +3,8 @@
 # NOTE: Please fill out the license field for your package! If it is unknown,
 # then please put 'unknown'.
 
-# Maintainer: Your Name <youremail@domain.com>
 pkgname=rampartfs
-pkgver=1
+pkgver=1.0.1
 pkgrel=1
 epoch=1
 pkgdesc=""

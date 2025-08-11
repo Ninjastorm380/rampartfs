@@ -44,6 +44,9 @@ internal abstract partial class Bootstrap {
             Debug = false;
         }
 
+        FileSystemCacheTrimTarget = Math.Max(33554432L, FileSystemCacheTrimTarget);
+        FileSystemCacheCapacity   = Math.Max(134217728L, FileSystemCacheCapacity);
+
         if (Spawner == false) {
             if (Debug == true) {
                 Driver Driver = new Driver(BaseDirectory, ControlDirectory, FileSystemCapacity, FileSystemCacheCapacity, FileSystemCacheTrimTarget);
