@@ -85,7 +85,7 @@ internal partial class Cache {
         
         Int64 MaximumCache = BaseParamController["MaximumCache", 0];
         Int64 TrimTarget   = BaseParamController["TrimTarget", 0];
-        Int64 Threshold    = Math.Max((Int64)((MaximumCache - TrimTarget) / 4), 8388608);
+        Int64 Threshold    = Math.Max((MaximumCache - TrimTarget) / 4, 8388608);
 
         if (Info.Length > Threshold) {
             FileStream DiskStream = new FileStream(AbsolutePath, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
@@ -137,7 +137,7 @@ internal partial class Cache {
         
         Int64 MaximumCache = BaseParamController["MaximumCache", 0];
         Int64 TrimTarget   = BaseParamController["TrimTarget", 0];
-        Int64 Threshold    = Math.Max((Int64)((MaximumCache - TrimTarget) / 4), 8388608);
+        Int64 Threshold    = Math.Max((MaximumCache - TrimTarget) / 4, 8388608);
 
         if (Info.Length > Threshold) {
             CheckWrite(Buffer, Offset, Info, out Difference);
@@ -201,7 +201,7 @@ internal partial class Cache {
 
         Int64 MaximumCache = BaseParamController["MaximumCache", 0];
         Int64 TrimTarget   = BaseParamController["TrimTarget", 0];
-        Int64 Threshold    = Math.Max((Int64)((MaximumCache - TrimTarget) / 4), 8388608);
+        Int64 Threshold    = Math.Max((MaximumCache - TrimTarget) / 4, 8388608);
 
         if (Info.Length > Threshold) {
             CheckTruncate(Length, Info, out Difference);
