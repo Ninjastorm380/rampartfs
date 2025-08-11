@@ -9,7 +9,7 @@ internal abstract partial class Bootstrap {
     ) {
         if (Args.Length < 2) {
             Console.WriteLine($"usage:");
-            Console.WriteLine($"  {Path.GetFileName(Environment.ProcessPath)} <String:BackingDirectoryPath> <String:ControlDirectoryPath> <String:MountPointPath> [UInt64:FileSystemCapacity=107374182400UL] [UInt64:FileSystemCacheCapacity=346030080UL] [UInt64:FileSystemCacheMinimumTrimSize=1048576L] [Boolean:AsyncLaunch=True] [Boolean:Debug=False]");
+            Console.WriteLine($"  {Path.GetFileName(Environment.ProcessPath)} <String:BackingDirectoryPath> <String:ControlDirectoryPath> <String:MountPointPath> [UInt64:FileSystemCapacity=107374182400UL] [UInt64:FileSystemCacheCapacity=346030080UL] [UInt64:FileSystemCacheTrimTarget=312475648L] [Boolean:AsyncLaunch=True] [Boolean:Debug=False]");
 
             return;
         }
@@ -20,7 +20,7 @@ internal abstract partial class Bootstrap {
 
         Int64   FileSystemCapacity             = 107374182400L;
         Int64   FileSystemCacheCapacity        = 346030080L;
-        Int64   FileSystemCacheMinimumTrimSize = 1048576L;
+        Int64   FileSystemCacheTrimTarget      = 1048576L;
         Boolean Spawner                        = true;
         Boolean Debug                          = false;
 
@@ -32,8 +32,8 @@ internal abstract partial class Bootstrap {
             FileSystemCacheCapacity = 346030080L;
         }
         
-        if (Args.Length > 5 && Int64.TryParse(Args[5], out FileSystemCacheMinimumTrimSize) == false) {
-            FileSystemCacheMinimumTrimSize = 1048576L;
+        if (Args.Length > 5 && Int64.TryParse(Args[5], out FileSystemCacheTrimTarget) == false) {
+            FileSystemCacheTrimTarget = 312475648L;
         }
         
         if (Args.Length > 6 && Boolean.TryParse(Args[6], out Spawner) == false) {
@@ -46,7 +46,7 @@ internal abstract partial class Bootstrap {
 
         if (Spawner == false) {
             if (Debug == true) {
-                Driver Driver = new Driver(BaseDirectory, ControlDirectory, FileSystemCapacity, FileSystemCacheCapacity, FileSystemCacheMinimumTrimSize);
+                Driver Driver = new Driver(BaseDirectory, ControlDirectory, FileSystemCapacity, FileSystemCacheCapacity, FileSystemCacheTrimTarget);
                 String? ExecutableName = Path.GetFileName(Environment.ProcessPath);
             
                 if (ExecutableName == null) {
@@ -63,7 +63,7 @@ internal abstract partial class Bootstrap {
                 Driver.Mount(Arguments); 
             }
             else {
-                Driver Driver = new Driver(BaseDirectory, ControlDirectory, FileSystemCapacity, FileSystemCacheCapacity, FileSystemCacheMinimumTrimSize);
+                Driver Driver = new Driver(BaseDirectory, ControlDirectory, FileSystemCapacity, FileSystemCacheCapacity, FileSystemCacheTrimTarget);
                 String? ExecutableName = Path.GetFileName(Environment.ProcessPath);
             
                 if (ExecutableName == null) {
@@ -86,7 +86,7 @@ internal abstract partial class Bootstrap {
                 Args[2],
                 FileSystemCapacity.ToString(),
                 FileSystemCacheCapacity.ToString(),
-                FileSystemCacheMinimumTrimSize.ToString(),
+                FileSystemCacheTrimTarget.ToString(),
                 "False",
                 Debug.ToString()
             ];
