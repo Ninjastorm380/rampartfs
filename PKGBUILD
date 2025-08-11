@@ -34,7 +34,7 @@ prepare() {
 
 build() {
     cd $srcdir/rampartfs
-	dotnet publish . -c release -r linux-x64 -o $srcdir/RampartFS/bin/Publish/net9.0/linux-x64 -vq
+	dotnet publish . -c release -r linux-x64 -o $srcdir/RampartFS/bin/Publish/net9.0/linux-x64
 }
 
 check() {
