@@ -60,6 +60,7 @@ internal abstract partial class Bootstrap {
                     ExecutableName,
                     "-f",
                     "-d",
+                    "-o", "allow_other",
                     MountPoint
                 ];
             
@@ -76,6 +77,7 @@ internal abstract partial class Bootstrap {
                 String[] Arguments = [
                     ExecutableName,
                     "-f",
+                    "-o", "allow_other",
                     MountPoint
                 ];
             
