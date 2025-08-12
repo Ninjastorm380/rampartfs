@@ -36,10 +36,12 @@ internal partial class ControllerSurface<T> : IDisposable where T : IParsable<T>
     ) {
         BaseAbsolutePath = AbsolutePath;
         
-        Span<Byte> BaseRaw   = stackalloc Byte[524287];
-        Span<Char> BaseValue = stackalloc Char[524287];
-        
         FileStream Stream = new FileStream(BaseAbsolutePath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read | FileShare.Write);
+        
+        Span<Byte> BaseRaw   = stackalloc Byte[(Int32)Stream.Length];
+        Span<Char> BaseValue = stackalloc Char[(Int32)Stream.Length];
+        
+
         Int32 BaseRawLength = Stream.Read(BaseRaw); Stream.Flush(); Stream.Close(); Stream.Dispose();
 
         Span<Byte>         BaseRawSlice           = BaseRaw[..BaseRawLength];
@@ -49,8 +51,6 @@ internal partial class ControllerSurface<T> : IDisposable where T : IParsable<T>
         ReadOnlySpan<Char> ReadOnlyBaseValueSlice = (ReadOnlySpan<Char>)BaseValueSlice;
 
         BaseCachedValueRaw = new String(ReadOnlyBaseValueSlice);
-        
-        
         
         BaseCachedValue                 =  default;
         BaseDefaults                    =  default;
@@ -64,10 +64,11 @@ internal partial class ControllerSurface<T> : IDisposable where T : IParsable<T>
         Object              Sender,
         FileSystemEventArgs Args
     ) {
-        Span<Byte> BaseRaw   = stackalloc Byte[524287];
-        Span<Char> BaseValue = stackalloc Char[524287];
-        
         FileStream Stream = new FileStream(BaseAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Write);
+        
+        Span<Byte> BaseRaw   = stackalloc Byte[(Int32)Stream.Length];
+        Span<Char> BaseValue = stackalloc Char[(Int32)Stream.Length];
+        
         Int32 BaseRawLength = Stream.Read(BaseRaw); Stream.Flush(); Stream.Close(); Stream.Dispose();
 
         Span<Byte>         BaseRawSlice           = BaseRaw[..BaseRawLength];

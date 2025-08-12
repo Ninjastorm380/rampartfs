@@ -1,4 +1,3 @@
-using System.Text;
 using FuseDotNet;
 using Mono.Unix;
 using Mono.Unix.Native;
@@ -13,21 +12,23 @@ internal partial class Manager {
         Int64  MaximumCache,
         Int64  TrimTarget
     ) {
-        BaseController     = new Controller<Int64>(ControlPath);
-
+        BaseController = new Controller<Int64>(ControlPath);
+        
         BaseController["MaximumStorage", MaximumStorage] = MaximumStorage;
         BaseController["MaximumCache", MaximumCache]     = MaximumCache;
         BaseController["TrimTarget", TrimTarget]         = TrimTarget;
+        
         BaseController.LoadRaw("CachedEntries");
         
+        BaseCache = new Cache(RootPath, BaseController);
         
-        BaseCache          = new Cache(RootPath, BaseController);
         BaseCurrentStorage = 0;
-
         foreach (String AbsoluteFilePath in Directory.GetFiles(RootPath, "*", SearchOption.AllDirectories)) {
             UnixFileSystemInfo Info = UnixFileSystemInfo.GetFileSystemEntry(AbsoluteFilePath);
             BaseCurrentStorage = BaseCurrentStorage + Info.Length;
         }
+        
+        BaseController["Closed", 0]                      = 0;
     }
     
     public PosixResult ReadFile (
@@ -146,17 +147,21 @@ internal partial class Manager {
         in String     AbsolutePath,
         in Span<Byte> ArbitraryPathData
     ) {
-        StringBuilder Builder = new StringBuilder(ArbitraryPathData.Length);
+        Byte[] Buffer = new Byte[1048576];
+        Int32  Length = (Int32)Syscall.readlink(AbsolutePath, Buffer);
 
-        if (Syscall.readlink(AbsolutePath, Builder) != -1) {
-            String ArbitraryPath = Builder.ToString();
-            Encoding.UTF8.GetBytes(ArbitraryPath.AsSpan(), ArbitraryPathData);
-            return PosixResult.Success;
+        if (Length == -1) {
+            Errno Error      = Stdlib.GetLastError();
+            Int64 ErrorInt64 = (Int64)Error;
+            return (PosixResult)ErrorInt64;
         }
+
+        Span<Byte> BufferSpan = Buffer.AsSpan().Slice(0, Length + 1);
+        BufferSpan[BufferSpan.Length - 1] = 0;
         
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        BufferSpan.CopyTo(ArbitraryPathData);
+        
+        return PosixResult.Success;
     }
     
     public PosixResult UpdateTime (
@@ -335,7 +340,8 @@ internal partial class Manager {
     }
 
     public void Flush () {
-        BaseCache.ConditionalSaveAll();
+        BaseCache.ConditionalSaveAll(); 
+        BaseController["Closed", 0] = 1;
         BaseController.Dispose();
     }
     

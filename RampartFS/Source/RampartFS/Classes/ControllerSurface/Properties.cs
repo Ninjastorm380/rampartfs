@@ -21,8 +21,9 @@ internal partial class ControllerSurface<T> : IDisposable where T : IParsable<T>
                 return;
             }
             
-            Span<Byte>         BaseRaw              = stackalloc Byte[524287];
-            ReadOnlySpan<Char> BaseValue            = TempValue.ToString().AsSpan();
+            ReadOnlySpan<Char> BaseValue = TempValue.ToString().AsSpan();
+            Span<Byte>         BaseRaw   = stackalloc Byte[BaseValue.Length * 2];
+  
             Int32              BaseRawLength        = Encoding.UTF8.GetBytes(BaseValue, BaseRaw);
             Span<Byte>         BaseRawSlice         = BaseRaw[..BaseRawLength];
             ReadOnlySpan<Byte> ReadOnlyBaseRawSlice = (ReadOnlySpan<Byte>)BaseRawSlice;
@@ -37,8 +38,9 @@ internal partial class ControllerSurface<T> : IDisposable where T : IParsable<T>
             return BaseCachedValueRaw;
         }
         set {
-            Span<Byte>         BaseRaw              = stackalloc Byte[524287];
-            ReadOnlySpan<Char> BaseValue            = value.AsSpan();
+            ReadOnlySpan<Char> BaseValue = value.AsSpan();
+            Span<Byte>         BaseRaw   = stackalloc Byte[BaseValue.Length * 2];
+ 
             Int32              BaseRawLength        = Encoding.UTF8.GetBytes(BaseValue, BaseRaw);
             Span<Byte>         BaseRawSlice         = BaseRaw[..BaseRawLength];
             ReadOnlySpan<Byte> ReadOnlyBaseRawSlice = (ReadOnlySpan<Byte>)BaseRawSlice;

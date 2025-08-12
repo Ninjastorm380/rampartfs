@@ -285,7 +285,6 @@ internal partial class Cache {
         String PathListString = Builder.ToString();
         BaseParamController.SetRaw("CachedEntries", PathListString);
         
-
         foreach (String ChildAbsolutePath in Directory.GetFiles(BaseRootPath, "*", SearchOption.AllDirectories)) {
             if (BaseCache.TryRemove(ChildAbsolutePath, out CacheEntry? Value) == false) {
                 continue;
