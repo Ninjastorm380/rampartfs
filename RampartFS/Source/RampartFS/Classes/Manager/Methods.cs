@@ -1,4 +1,5 @@
 using FuseDotNet;
+using Lightning.Diagnostics.Logging;
 using Mono.Unix;
 using Mono.Unix.Native;
 
@@ -28,7 +29,7 @@ internal partial class Manager {
             BaseCurrentStorage = BaseCurrentStorage + Info.Length;
         }
         
-        BaseController["Closed", 0]                      = 0;
+        BaseController["Closed", 0] = 0;
     }
     
     public PosixResult ReadFile (
@@ -38,11 +39,15 @@ internal partial class Manager {
         out Int32      BytesRead
     ) {
         if (File.Exists(AbsolutePath) == false) {
+            Log.PrintAsync($"File '{AbsolutePath}' does not exist", LogLevel.Warning);
             BytesRead = 0;
             return PosixResult.ENOENT;
         }
         
+        Log.PrintAsync($"Reading {Buffer.Length} bytes from '{AbsolutePath}'", LogLevel.Debug);
         PosixResult Result = BaseCache.ReadFile(AbsolutePath, Buffer, Offset, out BytesRead);
+        Log.PrintAsync($"Read {BytesRead} bytes from '{AbsolutePath}'", LogLevel.Debug);
+        
         return Result;
     }
     
@@ -52,8 +57,13 @@ internal partial class Manager {
         in  Int64              Offset,
         out Int32              BytesWritten
     ) {
+        Log.PrintAsync($"Writing {Buffer.Length} bytes to '{AbsolutePath}'", LogLevel.Debug);
         PosixResult Result = BaseCache.WriteFile(AbsolutePath, Buffer, Offset, out BytesWritten, out Int64 Difference, BaseCurrentStorage, BaseController["MaximumStorage", 0]);
+        Log.PrintAsync($"Wrote {BytesWritten} bytes to '{AbsolutePath}'", LogLevel.Debug);
+        
         Interlocked.Add(ref BaseCurrentStorage, Difference);
+        Log.PrintAsync($"Used capacity changed by {Difference} bytes, now at {BaseCurrentStorage} bytes used", LogLevel.Debug);
+        
         return Result;
     }
     
@@ -61,8 +71,13 @@ internal partial class Manager {
         in String AbsolutePath,
         in Int64  Length
     ) {
+        Log.PrintAsync($"Resizing '{AbsolutePath}' to {Length} bytes", LogLevel.Debug);
         PosixResult Result = BaseCache.TruncateFile(AbsolutePath, Length, out Int64 Difference, BaseCurrentStorage, BaseController["MaximumStorage", 0]);
+        Log.PrintAsync($"Resized '{AbsolutePath}' to {Length} bytes", LogLevel.Debug);
+        
         Interlocked.Add(ref BaseCurrentStorage, Difference);
+        Log.PrintAsync($"Used capacity changed by {Difference} bytes, now at {BaseCurrentStorage} bytes used", LogLevel.Debug);
+        
         return Result;
     }
     
@@ -71,24 +86,27 @@ internal partial class Manager {
     ) {
         UnixFileSystemInfo Info = UnixFileSystemInfo.GetFileSystemEntry(AbsolutePath);
         if (Info.Exists == false) {
+            Log.PrintAsync($"Entry '{AbsolutePath}' does not exist", LogLevel.Warning);
             return PosixResult.ENOENT;
         }
         
         if (Info.FileType == FileTypes.RegularFile) {
             BaseCache.ConditionalDrop(AbsolutePath, out Int64 Difference);
+            
             Interlocked.Add(ref BaseCurrentStorage, Difference);
+            Log.PrintAsync($"Used capacity changed by {Difference} bytes, now at {BaseCurrentStorage} bytes used", LogLevel.Debug);
+        }
         
-            if (Syscall.unlink(AbsolutePath) == 0) return PosixResult.Success;
-            Errno Error      = Stdlib.GetLastError();
-            Int64 ErrorInt64 = (Int64)Error;
-            return (PosixResult)ErrorInt64;
+        if (Syscall.unlink(AbsolutePath) != -1) {
+            return PosixResult.Success;
         }
-        else {
-            if (Syscall.unlink(AbsolutePath) == 0) return PosixResult.Success;
-            Errno Error      = Stdlib.GetLastError();
-            Int64 ErrorInt64 = (Int64)Error;
-            return (PosixResult)ErrorInt64;
-        }
+
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+            
+        return ErrorResult;
     }
 
     public PosixResult FolderExists (
@@ -96,13 +114,15 @@ internal partial class Manager {
     ) {
         IntPtr Descriptor = Syscall.opendir(AbsolutePath);
         if (Descriptor > 0) {
-            if (Syscall.closedir(Descriptor) == 0) {
+            if (Syscall.closedir(Descriptor) != -1) {
                 return PosixResult.Success;
             }
         }
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult FileExists (
@@ -110,13 +130,15 @@ internal partial class Manager {
     ) {
         Int32 Descriptor = Syscall.open(AbsolutePath, OpenFlags.O_RDONLY);
         if (Descriptor > 0) {
-            if (Syscall.close(Descriptor) == 0) {
+            if (Syscall.close(Descriptor) != -1) {
                 return PosixResult.Success;
             }
         }
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     private static bool IsFileType (
@@ -137,10 +159,12 @@ internal partial class Manager {
         in String AbsolutePath,
         in String ArbitraryPath
     ) {
-        if (Syscall.symlink(ArbitraryPath, AbsolutePath) == 0) return PosixResult.Success;
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        if (Syscall.symlink(ArbitraryPath, AbsolutePath) != -1) return PosixResult.Success;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult ReadLink (
@@ -150,18 +174,20 @@ internal partial class Manager {
         Byte[] Buffer = new Byte[1048576];
         Int32  Length = (Int32)Syscall.readlink(AbsolutePath, Buffer);
 
-        if (Length == -1) {
-            Errno Error      = Stdlib.GetLastError();
-            Int64 ErrorInt64 = (Int64)Error;
-            return (PosixResult)ErrorInt64;
+        if (Length != -1) {
+            Span<Byte> BufferSpan = Buffer.AsSpan().Slice(0, Length + 1);
+            BufferSpan[BufferSpan.Length - 1] = 0;
+        
+            BufferSpan.CopyTo(ArbitraryPathData);
+        
+            return PosixResult.Success;
         }
-
-        Span<Byte> BufferSpan = Buffer.AsSpan().Slice(0, Length + 1);
-        BufferSpan[BufferSpan.Length - 1] = 0;
         
-        BufferSpan.CopyTo(ArbitraryPathData);
-        
-        return PosixResult.Success;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult UpdateTime (
@@ -174,29 +200,35 @@ internal partial class Manager {
             new Timespec { tv_sec = ModifiedOn.tv_sec, tv_nsec = ModifiedOn.tv_nsec }
         ];
         
-        if (Syscall.utimensat(AT_FDCWD, AbsolutePath, Times, 0) == 0) return PosixResult.Success;
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        if (Syscall.utimensat(AT_FDCWD, AbsolutePath, Times, 0) != -1) return PosixResult.Success;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult CreateFolder (
         in String        AbsolutePath,
         in PosixFileMode Mode
     ) {
-        if (Syscall.mkdir(AbsolutePath, (FilePermissions)Mode) == 0) return PosixResult.Success;
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        if (Syscall.mkdir(AbsolutePath, (FilePermissions)Mode) != -1) return PosixResult.Success;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult DeleteFolder (
         in String AbsolutePath
     ) {
-        if (Syscall.rmdir(AbsolutePath) == 0) return PosixResult.Success;
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        if (Syscall.rmdir(AbsolutePath) != -1) return PosixResult.Success;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult CreateFile (
@@ -204,24 +236,28 @@ internal partial class Manager {
         PosixFileMode Mode
     ) {
         Int32 Descriptor = Syscall.open(AbsolutePath, OpenFlags.O_CREAT | OpenFlags.O_WRONLY | OpenFlags.O_TRUNC, (FilePermissions)Mode);
-        if (Descriptor > 0) {
-            if (Syscall.close(Descriptor) == 0) {
+        if (Descriptor != -1) {
+            if (Syscall.close(Descriptor) != -1) {
                 return PosixResult.Success;
             }
         }
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult ChangeMode (
         in String        AbsolutePath,
         in PosixFileMode Mode
     ) {
-        if (Syscall.chmod(AbsolutePath, (FilePermissions)Mode) == 0) return PosixResult.Success;
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        if (Syscall.chmod(AbsolutePath, (FilePermissions)Mode) != -1) return PosixResult.Success;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult ChangeOwners (
@@ -229,10 +265,12 @@ internal partial class Manager {
         in Int32  UserID,
         in Int32  GroupID
     ) {
-        if (Syscall.chown(AbsolutePath, UserID, GroupID) == 0) return PosixResult.Success;
-        Errno Error      = Stdlib.GetLastError();
-        Int64 ErrorInt64 = (Int64)Error;
-        return (PosixResult)ErrorInt64;
+        if (Syscall.chown(AbsolutePath, UserID, GroupID) != -1) return PosixResult.Success;
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
     
     public PosixResult CheckPermissions (
@@ -242,18 +280,22 @@ internal partial class Manager {
         UnixFileSystemInfo Info = UnixFileSystemInfo.GetFileSystemEntry(AbsolutePath);
 
         if (Mode.HasFlag(PosixAccessMode.Exists) == true & Info.CanAccess(AccessModes.F_OK) == false) {
+            Log.PrintAsync($"Entry '{AbsolutePath}' does not exist", LogLevel.Warning);
             return PosixResult.EACCES;
         }
         
         if (Mode.HasFlag(PosixAccessMode.Read) == true & Info.CanAccess(AccessModes.R_OK) == false) {
+            Log.PrintAsync($"Entry '{AbsolutePath}' can not be read", LogLevel.Warning);
             return PosixResult.EACCES;
         }
         
         if (Mode.HasFlag(PosixAccessMode.Write) == true & Info.CanAccess(AccessModes.W_OK) == false) {
+            Log.PrintAsync($"Entry '{AbsolutePath}' can not be written", LogLevel.Warning);
             return PosixResult.EACCES;
         }
         
         if (Mode.HasFlag(PosixAccessMode.Execute) == true & Info.CanAccess(AccessModes.X_OK) == false) {
+            Log.PrintAsync($"Entry '{AbsolutePath}' can not be executed", LogLevel.Warning);
             return PosixResult.EACCES;
         }
         
@@ -265,6 +307,7 @@ internal partial class Manager {
         out IEnumerable<FuseDirEntry> Entries
     ) {
         if (Directory.Exists(AbsolutePath) == false) {
+            Log.PrintAsync($"Folder '{AbsolutePath}' does not exist", LogLevel.Warning);
             Entries = new List<FuseDirEntry>();
             return PosixResult.ENOENT;
         }
@@ -292,30 +335,40 @@ internal partial class Manager {
         in String NewAbsolutePath
     ) {
         if (Syscall.lstat(OldAbsolutePath, out Stat InfoStats) == -1) {
-            return PosixResult.ENOENT;
+            Errno       Error       = Stdlib.GetLastError();
+            Int64       ErrorInt64  = (Int64)Error;
+            PosixResult ErrorResult = (PosixResult)ErrorInt64;
+            Log.PrintAsync($"Syscall returned failure '{Error}' for rename from '{OldAbsolutePath}' to '{NewAbsolutePath}'", LogLevel.Warning);
+            return ErrorResult;
         }
         
         if (IsFileType(InfoStats.st_mode, FilePermissions.S_IFREG) == true) {
             BaseCache.ConditionalSaveFile(OldAbsolutePath);
             
             if (Stdlib.rename(OldAbsolutePath, NewAbsolutePath) == 0) return PosixResult.Success;
-            Errno Error      = Stdlib.GetLastError();
-            Int64 ErrorInt64 = (Int64)Error;
-            return (PosixResult)ErrorInt64;
+            Errno       Error       = Stdlib.GetLastError();
+            Int64       ErrorInt64  = (Int64)Error;
+            PosixResult ErrorResult = (PosixResult)ErrorInt64;
+            Log.PrintAsync($"Syscall returned failure '{Error}' for rename from '{OldAbsolutePath}' to '{NewAbsolutePath}'", LogLevel.Warning);
+            return ErrorResult;
         }
         else if (IsFileType(InfoStats.st_mode, FilePermissions.S_IFDIR) == true) {
             BaseCache.ConditionalSaveFolder(OldAbsolutePath);
             
             if (Stdlib.rename(OldAbsolutePath, NewAbsolutePath) == 0) return PosixResult.Success;
-            Errno Error      = Stdlib.GetLastError();
-            Int64 ErrorInt64 = (Int64)Error;
-            return (PosixResult)ErrorInt64;
+            Errno       Error       = Stdlib.GetLastError();
+            Int64       ErrorInt64  = (Int64)Error;
+            PosixResult ErrorResult = (PosixResult)ErrorInt64;
+            Log.PrintAsync($"Syscall returned failure '{Error}' for rename from '{OldAbsolutePath}' to '{NewAbsolutePath}'", LogLevel.Warning);
+            return ErrorResult;
         }
         else {
             if (Stdlib.rename(OldAbsolutePath, NewAbsolutePath) == 0) return PosixResult.Success;
-            Errno Error      = Stdlib.GetLastError();
-            Int64 ErrorInt64 = (Int64)Error;
-            return (PosixResult)ErrorInt64;
+            Errno       Error       = Stdlib.GetLastError();
+            Int64       ErrorInt64  = (Int64)Error;
+            PosixResult ErrorResult = (PosixResult)ErrorInt64;
+            Log.PrintAsync($"Syscall returned failure '{Error}' for rename from '{OldAbsolutePath}' to '{NewAbsolutePath}'", LogLevel.Warning);
+            return ErrorResult;
         }
     }
 
@@ -349,27 +402,31 @@ internal partial class Manager {
         in  String       AbsolutePath,
         out FuseFileStat Attributes
     ) {
-        if (Syscall.lstat(AbsolutePath, out Stat InfoStats) == -1) {
-            Attributes = new FuseFileStat();
-            return PosixResult.ENOENT;
-        }
+        if (Syscall.lstat(AbsolutePath, out Stat InfoStats) != -1) {
+            Attributes = new FuseFileStat() {
+                st_atim  = new TimeSpec(InfoStats.st_atim.tv_sec * 1000),
+                st_mtim  = new TimeSpec(InfoStats.st_mtim.tv_sec * 1000),
+                st_ctim  = new TimeSpec(InfoStats.st_ctim.tv_sec * 1000),
+                st_size  = InfoStats.st_size,
+                st_mode  = (PosixFileMode)InfoStats.st_mode,
+                st_gid   = InfoStats.st_gid,
+                st_uid   = InfoStats.st_uid,
+                st_nlink = (Int64)InfoStats.st_nlink,
+                st_rdev  = (Int64)InfoStats.st_rdev,
+                st_dev   = (Int64)InfoStats.st_dev
+            };
 
-        Attributes = new FuseFileStat() {
-            st_atim  = new TimeSpec(InfoStats.st_atim.tv_sec * 1000),
-            st_mtim  = new TimeSpec(InfoStats.st_mtim.tv_sec * 1000),
-            st_ctim  = new TimeSpec(InfoStats.st_ctim.tv_sec * 1000),
-            st_size  = InfoStats.st_size,
-            st_mode  = (PosixFileMode)InfoStats.st_mode,
-            st_gid   = InfoStats.st_gid,
-            st_uid   = InfoStats.st_uid,
-            st_nlink = (Int64)InfoStats.st_nlink,
-            st_rdev  = (Int64)InfoStats.st_rdev,
-            st_dev   = (Int64)InfoStats.st_dev,
-        };
-
-        if (IsFileType(InfoStats.st_mode, FilePermissions.S_IFREG) == true) {
-            BaseCache.GetAttributes(AbsolutePath, Attributes, out Attributes);
+            if (IsFileType(InfoStats.st_mode, FilePermissions.S_IFREG) == true) {
+                BaseCache.GetAttributes(AbsolutePath, Attributes, out Attributes);
+            }
+            return PosixResult.Success;
         }
-        return PosixResult.Success;
+        Attributes = new FuseFileStat();
+            
+        Errno       Error       = Stdlib.GetLastError();
+        Int64       ErrorInt64  = (Int64)Error;
+        PosixResult ErrorResult = (PosixResult)ErrorInt64;
+        Log.PrintAsync($"Syscall returned failure '{Error}' for path '{AbsolutePath}'", LogLevel.Warning);
+        return ErrorResult;
     }
 }

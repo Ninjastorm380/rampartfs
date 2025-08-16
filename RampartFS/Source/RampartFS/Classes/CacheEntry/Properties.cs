@@ -12,6 +12,12 @@ internal partial class CacheEntry {
             return BaseLoaded;
         }
     }
+    
+    public Boolean Modified {
+        get {
+            return BaseModified;
+        }
+    }
 
     public DateTime AccessedOn {
         get {

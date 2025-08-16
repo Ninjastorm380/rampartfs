@@ -7,10 +7,11 @@ internal partial class CacheEntry : IDisposable {
         String AbsolutePath
     ) {
         BaseLockObject   = new Object();
-        BaseStream       = new MemoryStream();
+        BaseStream       = new MemoryStream(16777216);
         BaseAbsolutePath = AbsolutePath;
         BaseAccessedOn   = DateTime.UtcNow;
         BaseLoaded       = false;
+        BaseModified     = false;
     }
     
     public void Lock () {
@@ -72,6 +73,8 @@ internal partial class CacheEntry : IDisposable {
         BytesWritten = Buffer.Length;
         
         BaseAccessedOn = DateTime.UtcNow;
+
+        BaseModified = true;
         
         return PosixResult.Success;
     }
@@ -84,6 +87,7 @@ internal partial class CacheEntry : IDisposable {
         Int64 Before = BaseStream.Length;
         Int64 After  = Offset + Buffer.Length;
         Difference = Math.Max(0, After - Before);
+        
         return PosixResult.Success;
     }
     
@@ -94,6 +98,8 @@ internal partial class CacheEntry : IDisposable {
         BaseStream.SetLength(Length);
         
         BaseAccessedOn = DateTime.UtcNow;
+
+        BaseModified = true;
         
         return PosixResult.Success;
     }
@@ -116,6 +122,7 @@ internal partial class CacheEntry : IDisposable {
         BaseStream.Flush();
         BaseStream.Close();
         BaseStream.Dispose();
-        BaseLoaded = false;
+        BaseLoaded   = false;
+        BaseModified = false;
     }
 }

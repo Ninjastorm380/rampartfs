@@ -6,4 +6,5 @@ internal partial class CacheEntry {
     private          DateTime     BaseAccessedOn;
     private readonly MemoryStream BaseStream;
     private          Boolean      BaseLoaded;
+    private          Boolean      BaseModified;
 }
