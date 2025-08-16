@@ -1,5 +1,4 @@
 using FuseDotNet;
-using Lightning.Diagnostics.Logging;
 using LTRData.Extensions.Native.Memory;
 using Mono.Unix;
 

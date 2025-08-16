@@ -1,14 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
-        <LangVersion>default</LangVersion>
-        <ImplicitUsings>enable</ImplicitUsings>
+        <LangVersion>13</LangVersion>
         <Nullable>enable</Nullable>
-        <PublishAot>true</PublishAot>
-        <InvariantGlobalization>true</InvariantGlobalization>
-        <AssemblyName>rampartfs</AssemblyName>
         <RootNamespace />
     </PropertyGroup>
 
@@ -27,12 +22,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="LTRData.FuseDotNet" Version="1.0.0.10" />
-      <PackageReference Include="Mono.Unix" Version="7.1.0-final.1.21458.1" />
+      <Folder Include="Source\Lightning\Diagnostics\Info\Classes\" />
+      <Folder Include="Source\Lightning\Diagnostics\Info\Enumerations\" />
+      <Folder Include="Source\Lightning\Diagnostics\Info\Structures\" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Lightning.Diagnostics\Lightning.Diagnostics.csproj" />
+      <PackageReference Include="Mono.Unix" Version="7.1.0-final.1.21458.1" />
     </ItemGroup>
 
 </Project>

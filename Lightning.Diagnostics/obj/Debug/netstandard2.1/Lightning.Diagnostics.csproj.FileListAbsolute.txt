@@ -1,0 +1,9 @@
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/bin/Debug/netstandard2.1/Lightning.Diagnostics.deps.json
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/bin/Debug/netstandard2.1/Lightning.Diagnostics.dll
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/bin/Debug/netstandard2.1/Lightning.Diagnostics.pdb
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/obj/Debug/netstandard2.1/Lightning.Diagnostics.GeneratedMSBuildEditorConfig.editorconfig
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/obj/Debug/netstandard2.1/Lightning.Diagnostics.AssemblyInfoInputs.cache
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/obj/Debug/netstandard2.1/Lightning.Diagnostics.AssemblyInfo.cs
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/obj/Debug/netstandard2.1/Lightning.Diagnostics.csproj.CoreCompileInputs.cache
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/obj/Debug/netstandard2.1/Lightning.Diagnostics.dll
+/home/prydaran/Documents/Rider/Lightning/0001/Lightning/Lightning.Diagnostics/obj/Debug/netstandard2.1/Lightning.Diagnostics.pdb
