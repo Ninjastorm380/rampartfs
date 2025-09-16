@@ -29,7 +29,7 @@ prepare() {
 
 build() {
     cd $srcdir/rampartfs
-	dotnet publish $srcdir/rampartfs/rampartfs/rampartfs.csproj -c release -r linux-x64 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:DebugType=None -p:DebugSymbols=false -p:StripSymbols=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained -o $srcdir/rampartfs/rampartfs/bin/Publish/net9.0/linux-x64
+	dotnet publish $srcdir/rampartfs/rampartfs/rampartfs.csproj -c release -r linux-x64 -o $srcdir/rampartfs/rampartfs/bin/Publish/net9.0/linux-x64
 }
 
 check() {
