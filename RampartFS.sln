@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RampartFS", "RampartFS\RampartFS.csproj", "{CF9B6874-2FAD-4EDC-B6C7-5EF8C172C5A6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "librampartfs", "librampartfs\librampartfs.csproj", "{CCDDDB4C-6172-4EEC-BDCE-D31BD46FFD1A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lightning.Diagnostics", "Lightning.Diagnostics\Lightning.Diagnostics.csproj", "{FB28014F-F04F-44E3-8419-06C28FC6CAF7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rampartfs", "rampartfs\rampartfs.csproj", "{7253E7FF-34A9-4D99-A747-BC3DFBD0043C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,13 +10,13 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CF9B6874-2FAD-4EDC-B6C7-5EF8C172C5A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CF9B6874-2FAD-4EDC-B6C7-5EF8C172C5A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CF9B6874-2FAD-4EDC-B6C7-5EF8C172C5A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CF9B6874-2FAD-4EDC-B6C7-5EF8C172C5A6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FB28014F-F04F-44E3-8419-06C28FC6CAF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FB28014F-F04F-44E3-8419-06C28FC6CAF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FB28014F-F04F-44E3-8419-06C28FC6CAF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FB28014F-F04F-44E3-8419-06C28FC6CAF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCDDDB4C-6172-4EEC-BDCE-D31BD46FFD1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCDDDB4C-6172-4EEC-BDCE-D31BD46FFD1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCDDDB4C-6172-4EEC-BDCE-D31BD46FFD1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCDDDB4C-6172-4EEC-BDCE-D31BD46FFD1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7253E7FF-34A9-4D99-A747-BC3DFBD0043C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7253E7FF-34A9-4D99-A747-BC3DFBD0043C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7253E7FF-34A9-4D99-A747-BC3DFBD0043C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7253E7FF-34A9-4D99-A747-BC3DFBD0043C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
