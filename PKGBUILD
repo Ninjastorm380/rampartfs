@@ -15,7 +15,7 @@ provides=()
 conflicts=()
 replaces=()
 backup=()
-options=()
+options=(!strip)
 install=
 changelog=
 source=()
@@ -29,7 +29,7 @@ prepare() {
 
 build() {
     cd $srcdir/rampartfs
-	dotnet publish $srcdir/rampartfs/rampartfs/rampartfs.csproj -c release -r linux-x64 -o $srcdir/rampartfs/rampartfs/bin/Publish/net9.0/linux-x64
+	dotnet publish $srcdir/rampartfs -c release
 }
 
 check() {
@@ -40,5 +40,5 @@ package() {
 	mkdir $pkgdir/usr
 	mkdir $pkgdir/usr/bin
 
-	cp $srcdir/rampartfs/rampartfs/bin/Publish/net9.0/linux-x64/rampartfs $pkgdir/usr/bin/rampartfs
+	cp $srcdir/rampartfs/rampartfs/bin/Release/net9.0/linux-x64/publish/rampartfs $pkgdir/usr/bin/rampartfs
 }
