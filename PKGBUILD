@@ -1,10 +1,5 @@
-# This is an example PKGBUILD file. Use this as a start to creating your own,
-# and remove these comments. For more information, see 'man PKGBUILD'.
-# NOTE: Please fill out the license field for your package! If it is unknown,
-# then please put 'unknown'.
-
 pkgname=rampartfs
-pkgver=1.0.2
+pkgver=1.3.0
 pkgrel=1
 epoch=1
 pkgdesc=""
@@ -44,8 +39,6 @@ check() {
 package() {
 	mkdir $pkgdir/usr
 	mkdir $pkgdir/usr/bin
-	mkdir $pkgdir/usr/lib
 
 	cp $srcdir/RampartFS/bin/Publish/net9.0/linux-x64/rampartfs $pkgdir/usr/bin/rampartfs
-	cp $srcdir/RampartFS/bin/Publish/net9.0/linux-x64/libMono.Unix.so $pkgdir/usr/lib/libMono.Unix.so
 }

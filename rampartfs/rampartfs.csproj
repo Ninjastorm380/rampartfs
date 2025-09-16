@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishAot>false</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <RootNamespace />
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <PlatformTarget>x64</PlatformTarget>
+      <DebugType>full</DebugType>
+      <WarningLevel>4</WarningLevel>
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <DebugType>none</DebugType>
+      <WarningLevel>4</WarningLevel>
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+      <DebugSymbols>false</DebugSymbols>
+      <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\librampartfs\librampartfs.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Mono.Fuse.NETStandard" Version="1.1.0" />
+    </ItemGroup>
+
+</Project>
