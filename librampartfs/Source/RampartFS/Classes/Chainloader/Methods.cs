@@ -21,7 +21,7 @@ public abstract partial class Chainloader {
     
     private static void PrintHelp() {
         String DefaultParameters = $"<String:StorageFolderPath> <String:ControlFolderPath> <String:LogFolderPath> <String:MountFolderPath> [Int64:StorageMaximum = {DefaultStorageMaximum}] [Boolean:LogToConsole = {DefaultLogToConsole}] [Boolean:LogToDisk = {DefaultLogToDisk}] [LogLevel:Verbosity = {DefaultVerbosity}] [Boolean:Async = {DefaultAsync}]";
-        Console.Write($"rampartfs - a high performance folder redirection filesystem with runtime configurable storage limits.{Environment.NewLine}  args: {DefaultParameters}");
+        Console.Write($"rampartfs - a high performance folder redirection filesystem with runtime configurable storage limits.{Environment.NewLine}  args: {DefaultParameters}{Environment.NewLine}");
     }
     
     public static Boolean TryLaunch(String[] Args, [NotNullWhen(true)] out Filesystem? System) {
