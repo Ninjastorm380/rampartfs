@@ -15,4 +15,6 @@ public partial class Filesystem : IDisposable {
     private readonly Surface<Int64> BaseMounted;
     private readonly Surface<Int64> BaseStorageMaximum;
     private readonly Surface<Int64> BaseStorageCurrent;
+
+    private readonly Lock BaseStorageCurrentLock;
 }

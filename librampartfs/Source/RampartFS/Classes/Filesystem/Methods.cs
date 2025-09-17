@@ -43,7 +43,9 @@ public partial class Filesystem {
         BaseMounted = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}Mounted", BaseDefaultMounted);
         BaseStorageMaximum = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageMaximum", BaseDefaultStorageMaximum);
         BaseStorageCurrent = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageCurrent", 0);
-        
+
+        BaseStorageCurrentLock = new Lock();
+
         Log.Level = Verbosity;
 
         if (LogToConsole == true) {
@@ -56,6 +58,7 @@ public partial class Filesystem {
     }
 
     public void Init() {
+        BaseStorageCurrentLock.Enter();
         foreach (String ChildAbsolutePath in Directory.GetFiles(BaseStorageFolderPath, "*", SearchOption.AllDirectories)) {
             if (Interop.GetPathAttributes(ChildAbsolutePath, out Stat Attributes) == 0) {
                 if (Attributes.st_mode.HasFlag(FilePermissions.S_IFREG) == true) {
@@ -63,6 +66,7 @@ public partial class Filesystem {
                 }
             }
         }
+        BaseStorageCurrentLock.Exit();
 
         BaseMounted.Value = 1;
     }
@@ -99,7 +103,9 @@ public partial class Filesystem {
         foreach (String ChildAbsolutePath in Directory.GetFiles(AbsoluteStoragePath, "*", SearchOption.AllDirectories)) {
             if (Interop.GetPathAttributes(ChildAbsolutePath, out Stat Attributes) == 0) {
                 if (Attributes.st_mode.HasFlag(FilePermissions.S_IFREG) == true) {
+                    BaseStorageCurrentLock.Enter();
                     BaseStorageCurrent.Value -= Attributes.st_size;
+                    BaseStorageCurrentLock.Exit();
                 }
             }
         }
@@ -149,16 +155,20 @@ public partial class Filesystem {
         
         SimulateWrite(WriteBuffer.Length, WriteOffset, OldLength, out Int64 StorageDifference);
 
+        BaseStorageCurrentLock.Enter();
         if (BaseStorageCurrent.Value + StorageDifference > BaseStorageMaximum.Value) {
             BytesWritten = 0;
-
+            BaseStorageCurrentLock.Exit();
             return Errno.ENOSPC;
         }
+        BaseStorageCurrentLock.Exit();
         
         Errno Result = Interop.WriteHandle(AbsoluteStoragePath, Handle, WriteOffset, WriteBuffer, out BytesWritten);
 
         if (Result == 0) {
+            BaseStorageCurrentLock.Enter();
             BaseStorageCurrent.Value += StorageDifference;
+            BaseStorageCurrentLock.Exit();
         }
         
         return Result;
@@ -177,14 +187,19 @@ public partial class Filesystem {
         
         SimulateTruncate(Length, OldLength, out Int64 StorageDifference);
         
+        BaseStorageCurrentLock.Enter();
         if (BaseStorageCurrent.Value + StorageDifference > BaseStorageMaximum.Value) {
+            BaseStorageCurrentLock.Exit();
             return Errno.ENOSPC;
         }
+        BaseStorageCurrentLock.Exit();
         
         Errno Result = Interop.TruncateHandle(AbsoluteStoragePath, Handle, Length);
         
         if (Result == 0) {
+            BaseStorageCurrentLock.Enter();
             BaseStorageCurrent.Value += StorageDifference;
+            BaseStorageCurrentLock.Exit();
         }
 
         return Result;
@@ -239,7 +254,9 @@ public partial class Filesystem {
         Errno Result = Interop.RemoveFile(AbsoluteStoragePath);
 
         if (Result == 0) {
+            BaseStorageCurrentLock.Enter();
             BaseStorageCurrent.Value -= Attributes.st_size;
+            BaseStorageCurrentLock.Exit();
         }
 
         return Result;
@@ -258,14 +275,19 @@ public partial class Filesystem {
         
         SimulateTruncate(Length, OldLength, out Int64 StorageDifference);
         
+        BaseStorageCurrentLock.Enter();
         if (BaseStorageCurrent.Value + StorageDifference > BaseStorageMaximum.Value) {
+            BaseStorageCurrentLock.Exit();
             return Errno.ENOSPC;
         }
+        BaseStorageCurrentLock.Exit();
         
         Errno Result = Interop.TruncateFile(AbsoluteStoragePath, Length);
         
         if (Result == 0) {
+            BaseStorageCurrentLock.Enter();
             BaseStorageCurrent.Value += StorageDifference;
+            BaseStorageCurrentLock.Exit();
         }
 
         return Result;
