@@ -42,7 +42,7 @@ public partial class Filesystem {
 
         BaseMounted = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}Mounted", BaseDefaultMounted);
         BaseStorageMaximum = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageMaximum", BaseDefaultStorageMaximum);
-        BaseStorageCurrent = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageMaximum", 0);
+        BaseStorageCurrent = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageCurrent", 0);
         
         Log.Level = Verbosity;
 
