@@ -42,6 +42,7 @@ public partial class Filesystem {
 
         BaseMounted = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}Mounted", BaseDefaultMounted);
         BaseStorageMaximum = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageMaximum", BaseDefaultStorageMaximum);
+        BaseStorageCurrent = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageMaximum", 0);
         
         Log.Level = Verbosity;
 
@@ -52,15 +53,13 @@ public partial class Filesystem {
         if (LogToDisk == true) {
             Log.AddLogTarget(new FileLogTarget($"{BaseLogFolderPath}{Path.DirectorySeparatorChar}rampartfs.log"));
         }
-
-        BaseStorageCurrent = 0;
     }
 
     public void Init() {
         foreach (String ChildAbsolutePath in Directory.GetFiles(BaseStorageFolderPath, "*", SearchOption.AllDirectories)) {
             if (Interop.GetPathAttributes(ChildAbsolutePath, out Stat Attributes) == 0) {
                 if (Attributes.st_mode.HasFlag(FilePermissions.S_IFREG) == true) {
-                    Interlocked.Add(ref BaseStorageCurrent, Attributes.st_size);
+                    BaseStorageCurrent.Value += Attributes.st_size;
                 }
             }
         }
@@ -100,7 +99,7 @@ public partial class Filesystem {
         foreach (String ChildAbsolutePath in Directory.GetFiles(AbsoluteStoragePath, "*", SearchOption.AllDirectories)) {
             if (Interop.GetPathAttributes(ChildAbsolutePath, out Stat Attributes) == 0) {
                 if (Attributes.st_mode.HasFlag(FilePermissions.S_IFREG) == true) {
-                    Interlocked.Add(ref BaseStorageCurrent, -Attributes.st_size);
+                    BaseStorageCurrent.Value -= Attributes.st_size;
                 }
             }
         }
@@ -150,7 +149,7 @@ public partial class Filesystem {
         
         SimulateWrite(WriteBuffer.Length, WriteOffset, OldLength, out Int64 StorageDifference);
 
-        if (Interlocked.Read(ref BaseStorageCurrent) + StorageDifference > BaseStorageMaximum.Value) {
+        if (BaseStorageCurrent.Value + StorageDifference > BaseStorageMaximum.Value) {
             BytesWritten = 0;
 
             return Errno.ENOSPC;
@@ -159,7 +158,7 @@ public partial class Filesystem {
         Errno Result = Interop.WriteHandle(AbsoluteStoragePath, Handle, WriteOffset, WriteBuffer, out BytesWritten);
 
         if (Result == 0) {
-            Interlocked.Add(ref BaseStorageCurrent, StorageDifference);
+            BaseStorageCurrent.Value += StorageDifference;
         }
         
         return Result;
@@ -178,14 +177,14 @@ public partial class Filesystem {
         
         SimulateTruncate(Length, OldLength, out Int64 StorageDifference);
         
-        if (Interlocked.Read(ref BaseStorageCurrent) + StorageDifference > BaseStorageMaximum.Value) {
+        if (BaseStorageCurrent.Value + StorageDifference > BaseStorageMaximum.Value) {
             return Errno.ENOSPC;
         }
         
         Errno Result = Interop.TruncateHandle(AbsoluteStoragePath, Handle, Length);
         
         if (Result == 0) {
-            Interlocked.Add(ref BaseStorageCurrent, StorageDifference);
+            BaseStorageCurrent.Value += StorageDifference;
         }
 
         return Result;
@@ -240,7 +239,7 @@ public partial class Filesystem {
         Errno Result = Interop.RemoveFile(AbsoluteStoragePath);
 
         if (Result == 0) {
-            Interlocked.Add(ref BaseStorageCurrent, -Attributes.st_size);
+            BaseStorageCurrent.Value -= Attributes.st_size;
         }
 
         return Result;
@@ -259,14 +258,14 @@ public partial class Filesystem {
         
         SimulateTruncate(Length, OldLength, out Int64 StorageDifference);
         
-        if (Interlocked.Read(ref BaseStorageCurrent) + StorageDifference > BaseStorageMaximum.Value) {
+        if (BaseStorageCurrent.Value + StorageDifference > BaseStorageMaximum.Value) {
             return Errno.ENOSPC;
         }
         
         Errno Result = Interop.TruncateFile(AbsoluteStoragePath, Length);
         
         if (Result == 0) {
-            Interlocked.Add(ref BaseStorageCurrent, StorageDifference);
+            BaseStorageCurrent.Value += StorageDifference;
         }
 
         return Result;
@@ -403,7 +402,7 @@ public partial class Filesystem {
     }
 
     public void Dispose() {
-        
+        BaseStorageCurrent.Dispose();
         BaseStorageMaximum.Dispose();
 
         BaseMounted.Value = 0;
