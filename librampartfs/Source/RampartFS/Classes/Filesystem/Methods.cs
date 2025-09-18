@@ -40,9 +40,9 @@ public partial class Filesystem {
         BaseDefaultMounted = 0;
         BaseDefaultStorageMaximum = StorageMaximum;
 
-        BaseMounted = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}Mounted", BaseDefaultMounted);
-        BaseStorageMaximum = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageMaximum", BaseDefaultStorageMaximum);
-        BaseStorageCurrent = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}StorageCurrent", 0);
+        BaseMounted = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}mounted", BaseDefaultMounted);
+        BaseStorageMaximum = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}storagemaximum", BaseDefaultStorageMaximum);
+        BaseStorageCurrent = new Surface<Int64>($"{ControlFolderPath}{Path.DirectorySeparatorChar}storagecurrent", 0);
 
         BaseStorageCurrentLock = new Lock();
 
