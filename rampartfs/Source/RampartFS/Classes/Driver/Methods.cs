@@ -10,7 +10,7 @@ public partial class Driver : FileSystem {
         
         AllowAccessToOthers = true;
         MultiThreaded = true;
-        EnableKernelPermissionChecking = false;
+        EnableKernelPermissionChecking = true;
         EnableDirectIO = false;
         
         MountPoint = BaseFilesystem.MountFolderPath;
