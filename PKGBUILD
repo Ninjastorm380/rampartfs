@@ -1,5 +1,5 @@
 pkgname=rampartfs
-pkgver=1.3.0
+pkgver=1.3.0-1
 pkgrel=1
 epoch=1
 pkgdesc=""
