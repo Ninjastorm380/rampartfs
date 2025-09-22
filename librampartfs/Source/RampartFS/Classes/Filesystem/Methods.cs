@@ -62,7 +62,7 @@ public partial class Filesystem {
         foreach (String ChildAbsolutePath in Directory.GetFiles(BaseStorageFolderPath, "*", SearchOption.AllDirectories)) {
             if (Interop.GetPathAttributes(ChildAbsolutePath, out Stat Attributes) == 0) {
                 if (Attributes.st_mode.HasFlag(FilePermissions.S_IFREG) == true) {
-                    BaseStorageCurrent.Value += Attributes.st_size;
+                    BaseStorageCurrent.MutateValue(Attributes.st_size);
                 }
             }
         }
@@ -99,17 +99,16 @@ public partial class Filesystem {
         if (GetAbsoluteStoragePath(FusePath, out String AbsoluteStoragePath) == false) {
             return Errno.EACCES;
         }
-        
+        BaseStorageCurrentLock.Enter();
         foreach (String ChildAbsolutePath in Directory.GetFiles(AbsoluteStoragePath, "*", SearchOption.AllDirectories)) {
             if (Interop.GetPathAttributes(ChildAbsolutePath, out Stat Attributes) == 0) {
                 if (Attributes.st_mode.HasFlag(FilePermissions.S_IFREG) == true) {
-                    BaseStorageCurrentLock.Enter();
-                    BaseStorageCurrent.Value -= Attributes.st_size;
-                    BaseStorageCurrentLock.Exit();
+                    BaseStorageCurrent.MutateValue(-Attributes.st_size);
                 }
             }
         }
-
+        BaseStorageCurrentLock.Exit();
+        
         return Interop.RemoveDirectory(AbsoluteStoragePath);
     }
 
@@ -167,7 +166,7 @@ public partial class Filesystem {
 
         if (Result == 0) {
             BaseStorageCurrentLock.Enter();
-            BaseStorageCurrent.Value += StorageDifference;
+            BaseStorageCurrent.MutateValue(StorageDifference);
             BaseStorageCurrentLock.Exit();
         }
         
@@ -198,7 +197,7 @@ public partial class Filesystem {
         
         if (Result == 0) {
             BaseStorageCurrentLock.Enter();
-            BaseStorageCurrent.Value += StorageDifference;
+            BaseStorageCurrent.MutateValue(StorageDifference);
             BaseStorageCurrentLock.Exit();
         }
 
@@ -255,7 +254,7 @@ public partial class Filesystem {
 
         if (Result == 0) {
             BaseStorageCurrentLock.Enter();
-            BaseStorageCurrent.Value -= Attributes.st_size;
+            BaseStorageCurrent.MutateValue(-Attributes.st_size);
             BaseStorageCurrentLock.Exit();
         }
 
@@ -286,7 +285,7 @@ public partial class Filesystem {
         
         if (Result == 0) {
             BaseStorageCurrentLock.Enter();
-            BaseStorageCurrent.Value += StorageDifference;
+            BaseStorageCurrent.MutateValue(StorageDifference);
             BaseStorageCurrentLock.Exit();
         }
 
@@ -412,7 +411,9 @@ public partial class Filesystem {
             Status.f_bsize = 1;
             Status.f_frsize = 1;
             Status.f_blocks = (UInt64)BaseStorageMaximum.Value;
+            BaseStorageCurrentLock.Enter();
             Status.f_bfree = (UInt64)(BaseStorageMaximum.Value - BaseStorageCurrent.Value);
+            BaseStorageCurrentLock.Exit();
             Status.f_bavail = Status.f_bfree;
         }
 

@@ -1,6 +1,6 @@
 pkgname=rampartfs
-pkgver=1.3.0-1
-pkgrel=1
+pkgver=1.3.0
+pkgrel=3
 epoch=1
 pkgdesc=""
 arch=(x86_64)

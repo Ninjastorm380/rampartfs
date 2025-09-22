@@ -1,11 +1,14 @@
+using System.Numerics;
 using System.Text;
 
 namespace RampartFS;
 
-internal partial class Surface<T> : IDisposable, IEquatable<T> where T : IParsable<T>, IEquatable<T> {
+internal partial class Surface<T> : IDisposable, IEquatable<T> where T : IParsable<T>, IEquatable<T>, INumber<T> {
     public T Value {
         get {
-            return BaseCachedValue;
+            lock (BaseWatcher) {
+                return BaseCachedValue;
+            }
         }
         set {
             lock (BaseWatcher) {
