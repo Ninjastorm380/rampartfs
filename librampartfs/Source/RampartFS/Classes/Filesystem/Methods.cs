@@ -412,7 +412,7 @@ public partial class Filesystem {
             Status.f_bsize = 1;
             Status.f_frsize = 1;
             Status.f_blocks = (UInt64)BaseStorageMaximum.Value;
-            Status.f_bfree = (UInt64)(BaseStorageMaximum.Value - BaseStorageCurrent);
+            Status.f_bfree = (UInt64)(BaseStorageMaximum.Value - BaseStorageCurrent.Value);
             Status.f_bavail = Status.f_bfree;
         }
 
