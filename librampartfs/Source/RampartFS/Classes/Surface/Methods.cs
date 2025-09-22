@@ -65,15 +65,17 @@ internal partial class Surface<T> : IDisposable, IEquatable<T> where T : IParsab
         
         Int32 RawLength = Stream.Read(Raw); Stream.Flush(); Stream.Close(); Stream.Dispose();
 
-        Span<Byte>         RawSlice           = Raw[..RawLength];
+        Span<Byte>         RawSlice               = Raw[..RawLength];
         ReadOnlySpan<Byte> ReadOnlyBaseRawSlice   = (ReadOnlySpan<Byte>)RawSlice;
-        Int32              ValueLength        = Encoding.UTF8.GetChars(ReadOnlyBaseRawSlice, Chars);
-        Span<Char>         ValueSlice         = Chars[..ValueLength].Trim(Environment.NewLine.AsSpan());
+        Int32              ValueLength            = Encoding.UTF8.GetChars(ReadOnlyBaseRawSlice, Chars);
+        Span<Char>         ValueSlice             = Chars[..ValueLength].Trim(Environment.NewLine.AsSpan());
         ReadOnlySpan<Char> ReadOnlyBaseValueSlice = (ReadOnlySpan<Char>)ValueSlice;
 
-        BaseCachedValueRaw = new String(ReadOnlyBaseValueSlice);
-        if (T.TryParse(BaseCachedValueRaw, CultureInfo.InvariantCulture, out BaseCachedValue!) == false) {
-            BaseCachedValue = BaseDefaults;
+        lock (BaseWatcher) {
+            BaseCachedValueRaw = new String(ReadOnlyBaseValueSlice);
+            if (T.TryParse(BaseCachedValueRaw, CultureInfo.InvariantCulture, out BaseCachedValue!) == false) {
+                BaseCachedValue = BaseDefaults;
+            }
         }
     }
 
