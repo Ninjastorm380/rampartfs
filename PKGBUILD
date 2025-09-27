@@ -39,9 +39,8 @@ check() {
 package() {
 	mkdir $pkgdir/usr
 	mkdir $pkgdir/usr/bin
-	mkdir $pkgdir/usr/lib
 
 	cp $srcdir/rampartfs/rampartfs/bin/Release/net9.0/linux-x64/publish/rampartfs $pkgdir/usr/bin/rampartfs
-	cp $srcdir/rampartfs/rampartfs/bin/Release/net9.0/linux-x64/publish/libMonoFuseHelper.so $pkgdir/usr/lib/libMonoFuseHelper.so
-	cp $srcdir/rampartfs/rampartfs/bin/Release/net9.0/linux-x64/publish/libMonoPosixHelper.so $pkgdir/usr/lib/libMonoPosixHelper.so
+	cp $srcdir/rampartfs/rampartfs/bin/Release/net9.0/linux-x64/publish/libMonoFuseHelper.so $pkgdir/usr/bin/MonoFuseHelper.so
+	cp $srcdir/rampartfs/rampartfs/bin/Release/net9.0/linux-x64/publish/libMonoPosixHelper.so $pkgdir/usr/bin/MonoPosixHelper.so
 }
