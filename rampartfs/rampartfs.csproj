@@ -9,7 +9,9 @@
         <PublishSingleFile>true</PublishSingleFile>
         <PublishReadyToRun>true</PublishReadyToRun>
         <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
         <StripSymbols>false</StripSymbols>
+        <PublishTrimmed>false</PublishTrimmed>
         <InvariantGlobalization>true</InvariantGlobalization>
         <RootNamespace />
     </PropertyGroup>
